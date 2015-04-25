@@ -11,3 +11,10 @@
 - You can also save the result to a csv file, so you can edit it in EXCEL.
 - Support English, Japanese and Chinese.
 - Update Checker(Proxy not supported).
+
+####Still to do
+- Speed up
+- Multiline support
+- Search in results
+- Add Pdf, Word, Excel & Zip Grep Support
+- Portable support(maybe)
