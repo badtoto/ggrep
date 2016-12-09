@@ -974,11 +974,11 @@ namespace GGrep
                 string line = data.ShowLine;
                 string strLeft = data.ShowLine.Substring(0, colNo - 1);
 
-                int leftWidth = CalculateTextWidth(g, strLeft);
-                int matchedWidth = CalculateTextWidth(g, data.MatchedString);
-                int rightWidth = CalculateTextWidth(g, line.Substring(colNo - 1 + data.MatchedString.Length));
+                int leftWidth = CalculateTextWidth(g, strLeft, r.Width);
+                int matchedWidth = CalculateTextWidth(g, data.MatchedString, r.Width);
+                int rightWidth = CalculateTextWidth(g, line.Substring(colNo - 1 + data.MatchedString.Length), r.Width);
 
-                int space = (leftWidth + matchedWidth + rightWidth - CalculateTextWidth(g, line)) / 3;
+                int space = (leftWidth + matchedWidth + rightWidth - CalculateTextWidth(g, line, r.Width)) / 3;
                 leftWidth -= space;
                 matchedWidth -= space * 2;
 

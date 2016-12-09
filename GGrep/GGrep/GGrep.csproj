@@ -255,9 +255,9 @@
     <None Include="Resources\Search-128.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\demo\ObjectListViewDemo20\ObjectListView\ObjectListView2010.csproj">
+    <ProjectReference Include="..\..\..\demo\ObjectListView\ObjectListView\ObjectListView2012.csproj">
       <Project>{18feda0c-d147-4286-b39a-01204808106a}</Project>
-      <Name>ObjectListView2010</Name>
+      <Name>ObjectListView2012</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
