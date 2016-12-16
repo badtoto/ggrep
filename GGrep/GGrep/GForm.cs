@@ -35,7 +35,7 @@ namespace GGrep
 
         private SearchStatus status = null;
         public SearchStatus Status { get { return status; } set { status = value; } }
-        
+
         private bool isRunning = false;
         public bool IsRunning { get { return isRunning; } }
 
@@ -43,7 +43,7 @@ namespace GGrep
         public bool IsReplace { get { return isReplace; } }
 
         public BackgroundWorker BGW { get { return backgroundWorker; } }
-        
+
         private bool IsAutoEncoding { get { return GetControlText(cbbEncoding).Trim().ToLower() == "auto"; } }
         #endregion
 
@@ -80,11 +80,12 @@ namespace GGrep
             #endregion
 
             #region highlight render
-            this.colResult.Renderer = new HighlightRenderer();
+            // FIXME
+            //this.colResult.Renderer = new HighlightRenderer();
             #endregion
 
             #region tooltips
-            folvResult.CellToolTipGetter = delegate(OLVColumn column, Object rowObject)
+            folvResult.CellToolTipGetter = delegate (OLVColumn column, Object rowObject)
             {
                 if (rowObject != null && tooltipsToolStripMenuItem.Checked)
                 {
@@ -841,6 +842,14 @@ namespace GGrep
             if (fileList.Count > 0)
             {
                 status.Total = fileList.Count;
+
+                // FIXME
+
+                TextMatchFilter filter = TextMatchFilter.Contains(this.folvResult, option.SearchString);
+                this.folvResult.ModelFilter = filter;
+                this.folvResult.DefaultRenderer = new HighlightRenderer(filter);
+
+
                 foreach (string file in fileList)
                 {
                     if (backgroundWorker.CancellationPending)
@@ -958,52 +967,63 @@ namespace GGrep
     /// <summary>
     /// Highlight Matched String
     /// </summary>
-    internal class HighlightRenderer : BaseRenderer
+    internal class HighlightRenderer : HighlightTextRenderer
     {
-        public override void Render(Graphics g, Rectangle r)
+        internal const TextFormatFlags NormalTextFormatFlags = TextFormatFlags.NoPrefix |
+                                                               TextFormatFlags.EndEllipsis |
+                                                               TextFormatFlags.PreserveGraphicsTranslateTransform;
+        public HighlightRenderer(TextMatchFilter filter)
         {
-            // if selected, draw by default
-            if (this.IsItemSelected && this.ListView.Focused)
+            this.Filter = filter;
+            this.FramePen = null;
+        }
+
+        protected override void DrawGdiTextHighlighting(Graphics g, Rectangle r, string txt)
+        {
+            if ((this.IsItemSelected && this.ListView.Focused))
             {
-                base.Render(g, r);
+                // if row is selected, skip
             }
             else
             {
-                ResultData data = (ResultData)this.RowObject;
-                int colNo = (int)data.ShowColNo;
-                string line = data.ShowLine;
-                string strLeft = data.ShowLine.Substring(0, colNo - 1);
+                // TextRenderer puts horizontal padding around the strings, so we need to take
+                // that into account when measuring strings
+                const int paddingAdjustment = 6;
 
-                int leftWidth = CalculateTextWidth(g, strLeft, r.Width);
-                int matchedWidth = CalculateTextWidth(g, data.MatchedString, r.Width);
-                int rightWidth = CalculateTextWidth(g, line.Substring(colNo - 1 + data.MatchedString.Length), r.Width);
+                // Cache the font
+                Font f = this.Font;
 
-                int space = (leftWidth + matchedWidth + rightWidth - CalculateTextWidth(g, line, r.Width)) / 3;
-                leftWidth -= space;
-                matchedWidth -= space * 2;
-
-                Rectangle matchedRect = new Rectangle(r.X + leftWidth, r.Y, matchedWidth, r.Height);
-
-                this.DrawBackground(g, r);
-                using (Brush brush = new SolidBrush(Color.Yellow))
+                foreach (CharacterRange range in this.Filter.FindAllMatchedRanges(txt))
                 {
-                    g.FillRectangle(brush, matchedRect);
+                    // if not the column
+                    if (range.First + 1 != ((int)((ResultData)this.RowObject).ShowColNo))
+                        continue;
+
+                    // Measure the text that comes before our substring
+                    Size precedingTextSize = Size.Empty;
+                    if (range.First > 0)
+                    {
+                        string precedingText = txt.Substring(0, range.First);
+                        precedingTextSize = TextRenderer.MeasureText(g, precedingText, f, r.Size, NormalTextFormatFlags);
+                        precedingTextSize.Width -= paddingAdjustment;
+                    }
+
+                    // Measure the length of our substring (may be different each time due to case differences)
+                    string highlightText = txt.Substring(range.First, range.Length);
+                    Size textToHighlightSize = TextRenderer.MeasureText(g, highlightText, f, r.Size, NormalTextFormatFlags);
+                    textToHighlightSize.Width -= paddingAdjustment;
+
+                    float textToHighlightLeft = r.X + precedingTextSize.Width + 1;
+                    float textToHighlightTop = this.AlignVertically(r, textToHighlightSize.Height);
+
+                    // Draw a filled frame around our substring
+                    this.DrawSubstringFrame(g, textToHighlightLeft, textToHighlightTop, textToHighlightSize.Width, textToHighlightSize.Height);
                 }
-                this.DrawText(g, r, line);
             }
         }
 
-        protected override void DrawTextGdi(Graphics g, Rectangle r, String txt)
-        {
-            Color backColor = Color.Transparent;
-            if (this.IsDrawBackground && this.IsItemSelected && this.Column.Index == 0 && !this.ListView.FullRowSelect)
-                backColor = this.GetTextBackgroundColor();
-
-            TextFormatFlags flags = TextFormatFlags.NoPrefix | TextFormatFlags.VerticalCenter | TextFormatFlags.PreserveGraphicsTranslateTransform;
-            TextRenderer.DrawText(g, txt, this.Font, r, this.GetForegroundColor(), backColor, flags);
-        }
-
     }
+
 
     #endregion
 }
